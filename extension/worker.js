@@ -11,7 +11,19 @@ chrome.runtime.onConnect.addListener((port) => {
         port.onDisconnect.addListener(() => {
             popupPort = null;
         });
-        sendMessageToPopup({ type: 'connected', data: {...cached, connected: true} });
+        port.onMessage.addListener(async (request, sender, sendResponse) => {
+            if (request.action === 'toggle') {
+                listening = !listening;
+                if (listening) {
+                    await startCheckingExpiration();
+                    startCheckingSlots();
+                    sendMessageToPopup({ type: 'connected', data: { ...cached, connected: listening } });
+                } else {
+                    sendMessageToPopup({ type: 'connected', data: { ...cached, connected: false } });
+                }
+            }
+        });
+        sendMessageToPopup({ type: 'connected', data: { ...cached, connected: listening } });
     }
 });
 
@@ -21,21 +33,9 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
     }
 });
 
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'toggle') {
-        listening = !listening;
-        if (listening) {
-            startCheckingSlots();
-            sendMessageToPopup({ type: 'connected', data: {...cached, connected: true} });
-        } else {
-            sendMessageToPopup({ type: 'connected', data: {...cached, connected: false} });
-        }
-    }
-});
-
-function main() {
+async function main() {
     chrome.alarms.create('refreshCookie', { periodInMinutes: 5 });
-    startCheckingExpiration();
+    await startCheckingExpiration();
     startCheckingSlots();
 }
 
@@ -49,7 +49,7 @@ async function startCheckingSlots() {
     while (listening) {
         const slots = await checkForSlots('WA', 5020, 8);
         cached['slot'] = slots;
-        sendMessageToPopup({  type: 'slot', data: slots });
+        sendMessageToPopup({ type: 'slot', data: slots });
         await new Promise(resolve => setTimeout(resolve, CHECK_INTERVAL_SECONDS));
     }
 }
@@ -66,7 +66,7 @@ async function checkExpiration() {
         const refreshed = await response.json();
         return refreshed.expiration
     } catch (error) {
-        return `Error refreshing cookie: ${error.message}`;
+        return `NotLoggedIn`;
     }
 }
 

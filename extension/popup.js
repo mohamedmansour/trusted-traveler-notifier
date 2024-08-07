@@ -1,8 +1,8 @@
 const port = chrome.runtime.connect({ name: 'popup' });
 
 function renderRefresh(message) {
-  cookie.parentElement.title = `Last checked at: ${new Date().toLocaleString()}`
-  cookie.textContent = new Date(message).toLocaleString();
+  cookie.parentElement.title = `Last checked at: ${new Date().toLocaleString()}`;
+  cookie.textContent = message === 'NotLoggedIn' ? 'Not logged in' : new Date(message).toLocaleString();
 }
 
 function renderSlot(message) {
@@ -10,15 +10,19 @@ function renderSlot(message) {
   slot.textContent = message;
 }
 
-function renderConnection() {
+function renderConnection(message) {
   connection.parentElement.title = `Last checked at: ${new Date().toLocaleString()}`;
-  connection.textContent = 'Connected';
+  connection.textContent = message ? 'Disconnect' : 'Connect';
 }
+
+connection.addEventListener('click', () => {
+  port.postMessage({ action: 'toggle' });
+});
 
 port.onMessage.addListener((message) => {
   switch (message.type) {
     case 'connected':
-      renderConnection();
+      renderConnection(message.data.connected);
       renderSlot(message.data.slot);
       renderRefresh(message.data.refresh);
       break;
