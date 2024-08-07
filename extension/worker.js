@@ -20,6 +20,7 @@ chrome.runtime.onConnect.addListener((port) => {
                     sendMessageToPopup({ type: 'connected', data: { ...cached, connected: listening } });
                 } else {
                     sendMessageToPopup({ type: 'connected', data: { ...cached, connected: false } });
+                    setBadgeState('disconnected');
                 }
             }
         });
@@ -34,6 +35,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 });
 
 async function main() {
+    setBadgeState(listening ? 'connected' : 'disconnected');
     chrome.alarms.create('refreshCookie', { periodInMinutes: 5 });
     await startCheckingExpiration();
     startCheckingSlots();
@@ -93,8 +95,12 @@ async function checkForSlots(locationName, locationCode, maxMonth) {
                 message: `${validSlots.length} slots found for ${locationName}: ${availableSlotsText}`
             });
 
+            chrome.browserAction.setBadgeText({ text: '●' });
+            chrome.browserAction.setBadgeBackgroundColor({ color: '#28a745' });
+            setBadgeState('found');
             return `${validSlots.length} slots found: ${availableSlotsText}`;
         } else {
+            setBadgeState('connected');
             return `No appointments available.`;
         }
     } catch (error) {
@@ -102,5 +108,24 @@ async function checkForSlots(locationName, locationCode, maxMonth) {
     }
 }
 
+
+function setBadgeState(state) {
+    switch (state) {
+        case 'connected':
+            chrome.action.setBadgeText({ text: '🟢' });
+            chrome.action.setBadgeBackgroundColor({ color: '#28a745' });
+            break;
+        case 'disconnected':
+            chrome.action.setBadgeText({ text: '🔴' });
+            chrome.action.setBadgeBackgroundColor({ color: '#dc3545' });
+            break;
+        case 'found':
+            chrome.action.setBadgeText({ text: '🟡' });
+            chrome.action.setBadgeBackgroundColor({ color: '#ffc107' });
+            break;
+        default:
+            break;
+    }
+}
 
 main();
