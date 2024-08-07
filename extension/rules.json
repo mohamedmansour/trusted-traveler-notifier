@@ -1,0 +1,16 @@
+[
+    {
+      "id": 1,
+      "priority": 1,
+      "action": {
+        "type": "modifyHeaders",
+        "requestHeaders": [
+          { "header": "origin", "operation": "remove" }
+        ]
+      },
+      "condition": {
+        "urlFilter": "https://ttp.cbp.dhs.gov/*",
+        "resourceTypes": ["main_frame", "sub_frame", "xmlhttprequest"]
+      }
+    }
+  ]
