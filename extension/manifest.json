@@ -21,12 +21,11 @@
   },
   "permissions": [
     "alarms",
-    "storage",
-    "tabs",
-    "contextMenus",
-    "notifications",
     "declarativeNetRequest",
-    "declarativeNetRequestWithHostAccess"
+    "declarativeNetRequestWithHostAccess",
+    "notifications",
+    "offscreen",
+    "storage"
   ],
   "host_permissions": [
     "https://ttp.cbp.dhs.gov/*"

@@ -72,6 +72,18 @@ async function checkExpiration() {
     }
 }
 
+async function playAudio() {
+    if (!(await chrome.offscreen.hasDocument())) {
+        await chrome.offscreen.createDocument({
+            url: 'audio.html',
+            reasons: ['AUDIO_PLAYBACK'],
+            justification: 'testing'
+        });
+    }
+    await chrome.runtime.sendMessage({ type: 'play' });
+}
+
+
 async function checkForSlots(locationName, locationCode, maxMonth) {
     const url = SLOT_AVAILABILITY_URL.replace('{location}', locationCode);
     try {
@@ -88,12 +100,7 @@ async function checkForSlots(locationName, locationCode, maxMonth) {
             const audio = new Audio(soundUrl);
             audio.play();
 
-            chrome.notifications.create({
-                type: 'basic',
-                iconUrl: 'icons/icon.png',
-                title: 'Slots Available',
-                message: `${validSlots.length} slots found for ${locationName}: ${availableSlotsText}`
-            });
+            await playAudio();
 
             chrome.browserAction.setBadgeText({ text: '●' });
             chrome.browserAction.setBadgeBackgroundColor({ color: '#28a745' });
