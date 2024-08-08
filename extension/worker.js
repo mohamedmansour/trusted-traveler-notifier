@@ -1,6 +1,10 @@
 const SLOT_AVAILABILITY_URL = 'https://ttp.cbp.dhs.gov/schedulerapi/slot-availability?locationId={location}';
 const REFRESH_URL = 'https://ttp.cbp.dhs.gov/credential/v2/refresh';
-const CHECK_INTERVAL_SECONDS = 5 * 1000; // 5 seconds
+const SLOT_CHECK_INTERVAL_MILLISECONDS = 5 * 1000;
+const REFRESH_TOKEN_MINUTES = 5;
+const WASHINGTON_LOCATION_CODE = 5020;
+const FILTER_MAX_MONTH = 8;
+
 let popupPort;
 let cached = {};
 let listening = true;
@@ -36,7 +40,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 
 async function main() {
     setBadgeState(listening ? 'connected' : 'disconnected');
-    chrome.alarms.create('refreshCookie', { periodInMinutes: 5 });
+    chrome.alarms.create('refreshCookie', { periodInMinutes: REFRESH_TOKEN_MINUTES });
     await startCheckingExpiration();
     startCheckingSlots();
 }
@@ -49,10 +53,10 @@ async function startCheckingExpiration() {
 
 async function startCheckingSlots() {
     while (listening) {
-        const slots = await checkForSlots('WA', 5020, 8);
+        const slots = await checkForSlots(WASHINGTON_LOCATION_CODE, FILTER_MAX_MONTH);
         cached['slot'] = slots;
         sendMessageToPopup({ type: 'slot', data: slots });
-        await new Promise(resolve => setTimeout(resolve, CHECK_INTERVAL_SECONDS));
+        await new Promise(resolve => setTimeout(resolve, SLOT_CHECK_INTERVAL_MILLISECONDS));
     }
 }
 
@@ -84,7 +88,7 @@ async function playAudio() {
 }
 
 
-async function checkForSlots(locationName, locationCode, maxMonth) {
+async function checkForSlots(locationCode, maxMonth) {
     const url = SLOT_AVAILABILITY_URL.replace('{location}', locationCode);
     try {
         const response = await fetch(url);
