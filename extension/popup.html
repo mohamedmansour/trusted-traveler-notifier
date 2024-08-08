@@ -11,7 +11,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-width: 300px;
+      min-width: 400px;
       background: #fff;
       color: #333;
     }
@@ -22,7 +22,6 @@
 
     .container {
       width: 100%;
-      max-width: 400px;
       text-align: center;
     }
 
@@ -37,6 +36,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 10px;
     }
 
     .label {
@@ -84,6 +84,7 @@
       transition: background-color 0.3s, color 0.3s;
       background-color: rgba(0, 0, 0, 0.5);
       color: #fff;
+      width: 100px;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -121,16 +122,18 @@
     <div class="flex-container">
       <div class="flex-item connection">
         <div class="label">Status:</div>
-        <button id="connection">Checking...
+        <button id="connection">Checking...</button>
       </div>
     </div>
     <div class="flex-item slot">
       <div class="label">Appointments:</div>
       <div id="slot">Not Available</div>
+      <button id="view">View</button>
     </div>
     <div class="flex-item cookie">
       <div class="label">Login expires:</div>
       <div id="cookie">Not Set</div>
+      <button id="login">Login</button>
     </div>
   </div>
   </div>
