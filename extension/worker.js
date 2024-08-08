@@ -95,16 +95,9 @@ async function checkForSlots(locationName, locationCode, maxMonth) {
         if (validSlots.length > 0) {
             const availableSlotsText = validSlots.map(slot => slot.startTimestamp).join(', ');
 
-            // Play sound
-            const soundUrl = chrome.runtime.getURL('sonar.wav');
-            const audio = new Audio(soundUrl);
-            audio.play();
-
             await playAudio();
-
-            chrome.browserAction.setBadgeText({ text: '●' });
-            chrome.browserAction.setBadgeBackgroundColor({ color: '#28a745' });
             setBadgeState('found');
+            
             return `${validSlots.length} slots found: ${availableSlotsText}`;
         } else {
             setBadgeState('connected');
