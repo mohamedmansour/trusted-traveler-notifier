@@ -1,9 +1,13 @@
-const SLOT_AVAILABILITY_URL = 'https://ttp.cbp.dhs.gov/schedulerapi/slot-availability?locationId={location}';
+const SLOT_AVAILABILITY_URL = 'https://ttp.cbp.dhs.gov/schedulerapi/slot-availability?locationId={locationId}';
 const REFRESH_URL = 'https://ttp.cbp.dhs.gov/credential/v2/refresh';
+const SUBMIT_URL = 'https://ttp.cbp.dhs.gov/scheduler?status=will-reschedule&reason={reason}&appointmentStartTimestamp={startTimestamp}&appointmentEndTimestamp={endTimestamp}&locationId={locationId}&locationName={locationName}&tzData={tzData}';
 const SLOT_CHECK_INTERVAL_MILLISECONDS = 5 * 1000;
 const REFRESH_TOKEN_MINUTES = 5;
 const WASHINGTON_LOCATION_CODE = 5020;
+const WASHINGTON_LOCATION_NAME = 'Blaine Enrollment Center';
+const WASHTINGON_TZ_DATA = 'America/Los_Angeles';
 const FILTER_MAX_MONTH = 8;
+const RESCHEDULE_REASON = 'Reschedule to earlier date';
 
 let popupPort;
 let cached = {};
@@ -16,15 +20,24 @@ chrome.runtime.onConnect.addListener((port) => {
             popupPort = null;
         });
         port.onMessage.addListener(async (request, sender, sendResponse) => {
-            if (request.action === 'toggle') {
-                listening = !listening;
-                if (listening) {
-                    await startCheckingExpiration();
-                    startCheckingSlots();
-                    sendMessageToPopup({ type: 'connected', data: { ...cached, connected: listening } });
-                } else {
-                    sendMessageToPopup({ type: 'connected', data: { ...cached, connected: false } });
-                    setBadgeState('disconnected');
+            switch (request.action) {
+                case 'toggle': {
+                    listening = !listening;
+                    if (listening) {
+                        await startCheckingExpiration();
+                        startCheckingSlots();
+                        sendMessageToPopup({ type: 'connected', data: { ...cached, connected: listening } });
+                    } else {
+                        sendMessageToPopup({ type: 'connected', data: { ...cached, connected: false } });
+                        setBadgeState('disconnected');
+                    }
+                    break;
+                }
+                case 'submit': {
+                    const { startTimestamp, endTimestamp } = request.data;
+                    const results = await submitAppointment(startTimestamp, endTimestamp);
+                    sendResponse(results);
+                    break;
                 }
             }
         });
@@ -87,9 +100,8 @@ async function playAudio() {
     await chrome.runtime.sendMessage({ type: 'play' });
 }
 
-
-async function checkForSlots(locationCode, maxMonth) {
-    const url = SLOT_AVAILABILITY_URL.replace('{location}', locationCode);
+async function checkForSlots(locationId, maxMonth) {
+    const url = SLOT_AVAILABILITY_URL.replace('{locationId}', locationId);
     try {
         const response = await fetch(url);
         const results = await response.json();
@@ -101,17 +113,41 @@ async function checkForSlots(locationCode, maxMonth) {
 
             await playAudio();
             setBadgeState('found');
-            
-            return `${validSlots.length} slots found: ${availableSlotsText}`;
+
+            return {
+                ...validSlots,
+                message: `${validSlots.length} slots found: ${availableSlotsText}`,
+            }
         } else {
             setBadgeState('connected');
-            return `No appointments available.`;
+            return {
+                message: `No appointments available.`,
+            }
         }
+    } catch (error) {
+        return {
+            message: error.message,
+        };
+    }
+}
+
+async function submitAppointment(startTimestamp, endTimestamp) {
+    const url = SUBMIT_URL
+        .replace('{reason}', encodeURIComponent(RESCHEDULE_REASON))
+        .replace('{startTimestamp}', encodeURIComponent(startTimestamp))
+        .replace('{endTimestamp}', odeURIComponent(endTimestamp))
+        .replace('{locationId}', WASHINGTON_LOCATION_CODE)
+        .replace('{locationName}', WASHINGTON_LOCATION_NAME)
+        .replace('{tzData}', WASHTINGON_TZ_DATA);
+
+    try {
+        const response = await fetch(url);
+        const results = await response.json();
+        return results;
     } catch (error) {
         return `Error: ${error.message}`;
     }
 }
-
 
 function setBadgeState(state) {
     switch (state) {
