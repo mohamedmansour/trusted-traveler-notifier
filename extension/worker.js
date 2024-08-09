@@ -19,7 +19,7 @@ chrome.runtime.onConnect.addListener((port) => {
         port.onDisconnect.addListener(() => {
             popupPort = null;
         });
-        port.onMessage.addListener(async (request, sender, sendResponse) => {
+        port.onMessage.addListener(async (request, sender) => {
             switch (request.action) {
                 case 'toggle': {
                     listening = !listening;
@@ -36,7 +36,10 @@ chrome.runtime.onConnect.addListener((port) => {
                 case 'submit': {
                     const { startTimestamp, endTimestamp } = request.data;
                     const results = await submitAppointment(startTimestamp, endTimestamp);
-                    sendResponse(results);
+                    sendMessageToPopup({
+                        type: 'submitted',
+                        data: results,
+                    });
                     break;
                 }
             }
@@ -135,18 +138,11 @@ async function submitAppointment(startTimestamp, endTimestamp) {
     const url = SUBMIT_URL
         .replace('{reason}', encodeURIComponent(RESCHEDULE_REASON))
         .replace('{startTimestamp}', encodeURIComponent(startTimestamp))
-        .replace('{endTimestamp}', odeURIComponent(endTimestamp))
+        .replace('{endTimestamp}', encodeURIComponent(endTimestamp))
         .replace('{locationId}', WASHINGTON_LOCATION_CODE)
         .replace('{locationName}', WASHINGTON_LOCATION_NAME)
         .replace('{tzData}', WASHTINGON_TZ_DATA);
-
-    try {
-        const response = await fetch(url);
-        const results = await response.json();
-        return results;
-    } catch (error) {
-        return `Error: ${error.message}`;
-    }
+    return url;
 }
 
 function setBadgeState(state) {

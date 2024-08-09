@@ -29,9 +29,7 @@ function renderSlot(data) {
 
 function submitAppointment(startTimestamp, endTimestamp) {
   return () => {
-    port.postMessage({ action: 'submit', data: { startTimestamp, endTimestamp } }, (response) => {
-      alert(JSON.stringify(response));
-    });
+    port.postMessage({ action: 'submit', data: { startTimestamp, endTimestamp } });
   };
 }
 
@@ -64,6 +62,9 @@ port.onMessage.addListener((message) => {
       break;
     case 'refresh':
       renderRefresh(message.data);
+      break;
+    case 'submitted':
+      window.open(message.data);
       break;
   }
 });
